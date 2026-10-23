@@ -1,4 +1,5 @@
-﻿import { products } from '../../data/products'
+﻿import { useEffect, useState } from 'react'
+import { getProducts } from '../../services/productApi'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -39,22 +40,81 @@ function ProductCard({ product }) {
 }
 
 export default function ProductCollection() {
-  return (
-    <div className="mt-8">
-      <p className="mb-5 text-sm text-[#66665f]">
-        A preview of everyday spaces. Sample products and prices.
-      </p>
+  const [products, setProducts] = useState([])
+  const [status, setStatus] = useState('loading')
+  const [attempt, setAttempt] = useState(0)
 
-      <ul
-        aria-label="Product collection"
-        className="grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {products.map((product) => (
-          <li key={product.id}>
-            <ProductCard product={product} />
-          </li>
-        ))}
-      </ul>
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadProducts() {
+      try {
+        const items = await getProducts(controller.signal)
+
+        if (controller.signal.aborted) return
+
+        setProducts(items)
+        setStatus('success')
+      } catch {
+        if (controller.signal.aborted) return
+
+        setStatus('error')
+      }
+    }
+
+    loadProducts()
+
+    return () => controller.abort()
+  }, [attempt])
+
+  function handleRetry() {
+    setStatus('loading')
+    setAttempt((previous) => previous + 1)
+  }
+
+  return (
+    <div className="mt-8" aria-busy={status === 'loading'}>
+      {status === 'loading' && (
+        <p role="status" className="py-12 text-center text-[#66665f]">
+          Loading products...
+        </p>
+      )}
+
+      {status === 'error' && (
+        <div className="rounded-2xl border border-black/10 bg-white p-8 text-center">
+          <p role="alert" className="text-[#66665f]">
+            Products could not be loaded. Check your connection and try again.
+          </p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="mt-5 rounded-full bg-[#25251f] px-6 py-3 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {status === 'success' && (
+        <>
+          <p role="status" className="mb-5 text-sm text-[#66665f]">
+            {products.length === 0
+              ? 'No products available right now.'
+              : `${products.length} products. Demo catalogue powered by DummyJSON.`}
+          </p>
+
+          <ul
+            aria-label="Product collection"
+            className="grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {products.map((product) => (
+              <li key={product.id}>
+                <ProductCard product={product} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   )
 }
