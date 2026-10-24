@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getProducts } from '../../services/productApi'
 
 const currency = new Intl.NumberFormat('en-US', {
@@ -43,6 +43,21 @@ export default function ProductCollection() {
   const [products, setProducts] = useState([])
   const [status, setStatus] = useState('loading')
   const [attempt, setAttempt] = useState(0)
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('default')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+
+  const minimum = minPrice === '' ? 0 : Number(minPrice)
+  const maximum = maxPrice === '' ? Infinity : Number(maxPrice)
+  const invalidRange = minimum > maximum
+
+  const query = search.trim().toLowerCase()
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(query) &&
+    product.price >= minimum &&
+    product.price <= maximum,
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -72,6 +87,13 @@ export default function ProductCollection() {
     setAttempt((previous) => previous + 1)
   }
 
+  const visibleProducts = [...filteredProducts].sort((a, b) => {
+    if (sort === 'price-asc') return a.price - b.price
+    if (sort === 'price-desc') return b.price - a.price
+    if (sort === 'name-asc') return a.name.localeCompare(b.name)
+    return 0
+  })
+
   return (
     <div className="mt-8" aria-busy={status === 'loading'}>
       {status === 'loading' && (
@@ -97,17 +119,95 @@ export default function ProductCollection() {
 
       {status === 'success' && (
         <>
+          <div className="mb-6">
+            <label htmlFor="product-search" className="mb-2 block text-sm font-medium">
+              Search products
+            </label>
+            <input
+              id="product-search"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Try chair or table"
+              className="w-full rounded-xl border border-black/20 bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25251f] sm:max-w-md"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="product-sort" className="mb-2 block text-sm font-medium">
+              Sort by
+            </label>
+            <select
+              id="product-sort"
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+              className="w-full rounded-xl border border-black/20 bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25251f] sm:max-w-md"
+            >
+              <option value="default">Default order</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="name-asc">Name: A to Z</option>
+            </select>
+          </div>
+
+          <fieldset className="mb-6 sm:max-w-md">
+            <legend className="mb-2 text-sm font-medium">Price range (USD)</legend>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="min-price" className="mb-2 block text-sm">
+                  Minimum price
+                </label>
+                <input
+                  id="min-price"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={minPrice}
+                  onChange={(event) => setMinPrice(event.target.value)}
+                  placeholder="No minimum"
+                  aria-invalid={invalidRange}
+                  aria-describedby={invalidRange ? 'price-error' : undefined}
+                  className="w-full rounded-xl border border-black/20 bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25251f]"
+                />
+              </div>
+              <div>
+                <label htmlFor="max-price" className="mb-2 block text-sm">
+                  Maximum price
+                </label>
+                <input
+                  id="max-price"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={maxPrice}
+                  onChange={(event) => setMaxPrice(event.target.value)}
+                  placeholder="No maximum"
+                  aria-invalid={invalidRange}
+                  aria-describedby={invalidRange ? 'price-error' : undefined}
+                  className="w-full rounded-xl border border-black/20 bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25251f]"
+                />
+              </div>
+            </div>
+            {invalidRange && (
+              <p id="price-error" role="alert" className="mt-2 text-sm text-red-700">
+                Maximum price must be equal to or greater than minimum price.
+              </p>
+            )}
+          </fieldset>
+
           <p role="status" className="mb-5 text-sm text-[#66665f]">
             {products.length === 0
               ? 'No products available right now.'
-              : `${products.length} products. Demo catalogue powered by DummyJSON.`}
+              : filteredProducts.length === 0
+                ? 'No matching products. Try another search.'
+                : `${filteredProducts.length} of ${products.length} products. Demo catalogue powered by DummyJSON.`}
           </p>
 
           <ul
             aria-label="Product collection"
             className="grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-4"
           >
-            {products.map((product) => (
+            {visibleProducts.map((product) => (
               <li key={product.id}>
                 <ProductCard product={product} />
               </li>
