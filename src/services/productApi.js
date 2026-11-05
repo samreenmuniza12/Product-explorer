@@ -1,4 +1,4 @@
-﻿const PRODUCTS_URL = 'https://dummyjson.com/products/category/furniture'
+const PRODUCTS_URL = 'https://dummyjson.com/products?limit=0&select=id,title,category,price,thumbnail'
 
 export async function getProducts(signal) {
   const response = await fetch(PRODUCTS_URL, { signal })
