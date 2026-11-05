@@ -39,18 +39,42 @@ function ProductCard({ product }) {
   )
 }
 
+function readFilter(key, fallback = '') {
+  return new URLSearchParams(window.location.search).get(key) || fallback
+}
+
 export default function ProductCollection() {
   const [products, setProducts] = useState([])
   const [status, setStatus] = useState('loading')
   const [attempt, setAttempt] = useState(0)
-  const [search, setSearch] = useState('')
-  const [sort, setSort] = useState('default')
-  const [category, setCategory] = useState('all')
+  const [search, setSearch] = useState(() => readFilter('q'))
+  const [sort, setSort] = useState(() => readFilter('sort', 'default'))
+  const [category, setCategory] = useState(() => readFilter('category', 'all'))
 
   const categories = [...new Set(products.map((product) => product.category))]
     .sort((a, b) => a.localeCompare(b))
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
+  const [minPrice, setMinPrice] = useState(() => readFilter('min'))
+  const [maxPrice, setMaxPrice] = useState(() => readFilter('max'))
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const filters = {
+      q: search,
+      category: category === 'all' ? '' : category,
+      sort: sort === 'default' ? '' : sort,
+      min: minPrice,
+      max: maxPrice,
+    }
+
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === '') url.searchParams.delete(key)
+      else url.searchParams.set(key, value)
+    }
+
+    if (url.href !== window.location.href) {
+      window.history.replaceState(window.history.state, '', url)
+    }
+  }, [search, category, sort, minPrice, maxPrice])
 
   const minimum = minPrice === '' ? 0 : Number(minPrice)
   const maximum = maxPrice === '' ? Infinity : Number(maxPrice)
