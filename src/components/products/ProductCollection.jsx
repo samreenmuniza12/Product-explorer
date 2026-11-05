@@ -45,6 +45,10 @@ export default function ProductCollection() {
   const [attempt, setAttempt] = useState(0)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('default')
+  const [category, setCategory] = useState('all')
+
+  const categories = [...new Set(products.map((product) => product.category))]
+    .sort((a, b) => a.localeCompare(b))
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
@@ -55,6 +59,7 @@ export default function ProductCollection() {
   const query = search.trim().toLowerCase()
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(query) &&
+    (category === 'all' || product.category === category) &&
     product.price >= minimum &&
     product.price <= maximum,
   )
@@ -147,6 +152,25 @@ export default function ProductCollection() {
               <option value="price-asc">Price: low to high</option>
               <option value="price-desc">Price: high to low</option>
               <option value="name-asc">Name: A to Z</option>
+            </select>
+          </div>
+
+          <div className="mb-6 sm:max-w-md">
+            <label htmlFor="product-category" className="mb-2 block text-sm font-medium">
+              Category
+            </label>
+            <select
+              id="product-category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              className="w-full rounded-xl border border-black/20 bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25251f]"
+            >
+              <option value="all">All categories</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())}
+                </option>
+              ))}
             </select>
           </div>
 
