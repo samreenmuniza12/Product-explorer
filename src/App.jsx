@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ProductCollection from './components/products/ProductCollection'
 import ProductDetails from './components/products/ProductDetails'
 import ShoppingCart from './components/products/ShoppingCart'
+import { loadCartItems, saveCartItems } from './services/cartStorage'
 import { getCartUrl, getCatalogUrl, navigateOnClick } from './utils/productNavigation'
 
 function App() {
@@ -11,7 +12,11 @@ function App() {
   const [isCartView, setIsCartView] = useState(
     () => new URLSearchParams(window.location.search).get('view') === 'cart',
   )
-  const [cartItems, setCartItems] = useState([])
+  const [cartItems, setCartItems] = useState(loadCartItems)
+
+  useEffect(() => {
+    saveCartItems(cartItems)
+  }, [cartItems])
 
   useEffect(() => {
     function handlePopState() {
