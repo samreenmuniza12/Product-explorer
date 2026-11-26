@@ -17,7 +17,7 @@ function BackToProducts() {
   )
 }
 
-export default function ProductDetails({ productId }) {
+export default function ProductDetails({ productId, onAddToCart }) {
   const [request, setRequest] = useState({ key: null, status: 'loading', product: null })
   const [attempt, setAttempt] = useState(0)
   const numericId = Number(productId)
@@ -119,6 +119,13 @@ export default function ProductDetails({ productId }) {
               {product.description}
             </p>
             <p className="mt-8 text-3xl font-semibold">{currency.format(product.price)}</p>
+            <button
+              type="button"
+              onClick={() => onAddToCart(product)}
+              className="mt-5 rounded-full bg-[#25251f] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+            >
+              Add to cart
+            </button>
             <dl className="mt-8 grid grid-cols-2 gap-4 border-t border-black/10 pt-6">
               <div>
                 <dt className="text-sm text-[#66665f]">Rating</dt>
