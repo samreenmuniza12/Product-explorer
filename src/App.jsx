@@ -1,16 +1,23 @@
 import { useEffect, useState } from 'react'
 import ProductCollection from './components/products/ProductCollection'
 import ProductDetails from './components/products/ProductDetails'
-import { getCatalogUrl, navigateOnClick } from './utils/productNavigation'
+import ShoppingCart from './components/products/ShoppingCart'
+import { getCartUrl, getCatalogUrl, navigateOnClick } from './utils/productNavigation'
 
 function App() {
   const [productId, setProductId] = useState(
     () => new URLSearchParams(window.location.search).get('productId'),
   )
+  const [isCartView, setIsCartView] = useState(
+    () => new URLSearchParams(window.location.search).get('view') === 'cart',
+  )
+  const [cartItems, setCartItems] = useState([])
 
   useEffect(() => {
     function handlePopState() {
-      setProductId(new URLSearchParams(window.location.search).get('productId'))
+      const params = new URLSearchParams(window.location.search)
+      setProductId(params.get('productId'))
+      setIsCartView(params.get('view') === 'cart')
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -18,6 +25,36 @@ function App() {
   }, [])
 
   const catalogUrl = getCatalogUrl()
+  const cartUrl = getCartUrl()
+  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0)
+
+  function addToCart(product) {
+    setCartItems((items) => {
+      const existingItem = items.find((item) => item.product.id === product.id)
+
+      if (existingItem) {
+        return items.map((item) =>
+          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
+        )
+      }
+
+      return [...items, { product, quantity: 1 }]
+    })
+  }
+
+  function updateCartQuantity(productId, quantity) {
+    setCartItems((items) =>
+      items.map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity: Math.max(1, quantity) }
+          : item,
+      ),
+    )
+  }
+
+  function removeFromCart(productId) {
+    setCartItems((items) => items.filter((item) => item.product.id !== productId))
+  }
 
   return (
     <>
@@ -53,20 +90,47 @@ function App() {
           </a>
 
           <nav aria-label="Main navigation">
-            <a
-              href={productId ? catalogUrl : '#collection'}
-              onClick={productId ? (event) => navigateOnClick(event, catalogUrl, true) : undefined}
-              className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
-            >
-              Explore collection <span aria-hidden="true">↗</span>
-            </a>
+            <div className="flex items-center gap-3">
+              <a
+                href={productId || isCartView ? catalogUrl : '#collection'}
+                onClick={
+                  productId || isCartView
+                    ? (event) => navigateOnClick(event, catalogUrl, true)
+                    : undefined
+                }
+                className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+              >
+                Explore collection <span aria-hidden="true">↗</span>
+              </a>
+              <a
+                href={cartUrl}
+                aria-current={isCartView ? 'page' : undefined}
+                onClick={(event) => {
+                  const currentCartUrl = getCartUrl()
+                  event.currentTarget.href = currentCartUrl
+                  navigateOnClick(event, currentCartUrl)
+                }}
+                className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+              >
+                Cart <span aria-hidden="true">({cartCount})</span>
+                <span className="sr-only">
+                  , {cartCount} {cartCount === 1 ? 'unit' : 'units'}
+                </span>
+              </a>
+            </div>
           </nav>
         </div>
       </header>
 
       <main id="main-content" className="mx-auto max-w-7xl px-5 sm:px-8">
-        {productId ? (
-          <ProductDetails productId={productId} />
+        {isCartView ? (
+          <ShoppingCart
+            items={cartItems}
+            onQuantityChange={updateCartQuantity}
+            onRemove={removeFromCart}
+          />
+        ) : productId ? (
+          <ProductDetails productId={productId} onAddToCart={addToCart} />
         ) : (
           <>
             <section aria-labelledby="hero-title" className="py-16 sm:py-24">
