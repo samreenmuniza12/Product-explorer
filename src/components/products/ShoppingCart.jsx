@@ -2,6 +2,7 @@ import { currency } from '../../utils/currency'
 import { getCatalogUrl, navigateOnClick } from '../../utils/productNavigation'
 
 export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
+  const totalUnits = items.reduce((total, item) => total + item.quantity, 0)
   const subtotal = items.reduce((total, item) => total + item.product.price * item.quantity, 0)
   const catalogUrl = getCatalogUrl()
 
@@ -13,11 +14,13 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
 
       {items.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-black/10 bg-white p-8 text-center sm:p-12">
-          <p className="text-[#66665f]">Your cart is empty.</p>
+          <p role="status" className="mb-5 text-base font-medium text-[#20201e]">
+            Your cart is empty.
+          </p>
           <a
             href={catalogUrl}
             onClick={(event) => navigateOnClick(event, catalogUrl)}
-            className="mt-5 inline-flex rounded-full bg-[#25251f] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+            className="inline-flex rounded-full bg-[#25251f] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
           >
             Continue shopping
           </a>
@@ -91,10 +94,29 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
             </ul>
           </div>
 
-          <div className="ml-auto mt-6 flex max-w-sm items-baseline justify-between gap-6 border-t border-black/15 pt-5">
-            <h2 className="text-lg font-semibold">Subtotal</h2>
-            <p className="text-2xl font-semibold tabular-nums">{currency.format(subtotal)}</p>
-          </div>
+          <section
+            aria-labelledby="checkout-summary-title"
+            className="ml-auto mt-6 w-full max-w-sm rounded-2xl border border-black/10 bg-white p-6"
+          >
+            <h2 id="checkout-summary-title" className="text-lg font-semibold">
+              Checkout summary
+            </h2>
+            <dl className="mt-4 space-y-3">
+              <div className="flex items-baseline justify-between gap-4">
+                <dt className="text-sm text-[#66665f]">Total units</dt>
+                <dd className="font-medium tabular-nums">{totalUnits}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 border-t border-black/10 pt-3">
+                <dt className="text-sm text-[#66665f]">Subtotal</dt>
+                <dd className="text-2xl font-semibold tabular-nums">
+                  {currency.format(subtotal)}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-4 text-xs leading-5 text-[#66665f]">
+              Demo summary only. No payment or order submission.
+            </p>
+          </section>
         </>
       )}
     </section>
