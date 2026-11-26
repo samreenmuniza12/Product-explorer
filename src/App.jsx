@@ -1,6 +1,24 @@
-﻿import ProductCollection from './components/products/ProductCollection'
+import { useEffect, useState } from 'react'
+import ProductCollection from './components/products/ProductCollection'
+import ProductDetails from './components/products/ProductDetails'
+import { getCatalogUrl, navigateOnClick } from './utils/productNavigation'
 
 function App() {
+  const [productId, setProductId] = useState(
+    () => new URLSearchParams(window.location.search).get('productId'),
+  )
+
+  useEffect(() => {
+    function handlePopState() {
+      setProductId(new URLSearchParams(window.location.search).get('productId'))
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const catalogUrl = getCatalogUrl()
+
   return (
     <>
       <a
@@ -36,8 +54,9 @@ function App() {
 
           <nav aria-label="Main navigation">
             <a
-              href="#collection"
-              className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-white"
+              href={productId ? catalogUrl : '#collection'}
+              onClick={productId ? (event) => navigateOnClick(event, catalogUrl, true) : undefined}
+              className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
             >
               Explore collection <span aria-hidden="true">↗</span>
             </a>
@@ -46,43 +65,49 @@ function App() {
       </header>
 
       <main id="main-content" className="mx-auto max-w-7xl px-5 sm:px-8">
-        <section aria-labelledby="hero-title" className="py-16 sm:py-24">
-          <div className="grid items-end gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-20">
-            <div>
-              <p className="mb-6 flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
-                <span aria-hidden="true" className="size-2 rounded-full bg-[#6d48e5]" />
-                A little less searching
-              </p>
-              <h1
-                id="hero-title"
-                className="max-w-3xl text-5xl leading-[1.06] font-semibold tracking-[-0.055em] sm:text-7xl lg:text-8xl"
-              >
-                Find your next
-                <br />
-                <span className="text-[#6d48e5]">good find.</span>
-              </h1>
-            </div>
+        {productId ? (
+          <ProductDetails productId={productId} />
+        ) : (
+          <>
+            <section aria-labelledby="hero-title" className="py-16 sm:py-24">
+              <div className="grid items-end gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-20">
+                <div>
+                  <p className="mb-6 flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
+                    <span aria-hidden="true" className="size-2 rounded-full bg-[#6d48e5]" />
+                    A little less searching
+                  </p>
+                  <h1
+                    id="hero-title"
+                    className="max-w-3xl text-5xl leading-[1.06] font-semibold tracking-[-0.055em] sm:text-7xl lg:text-8xl"
+                  >
+                    Find your next
+                    <br />
+                    <span className="text-[#6d48e5]">good find.</span>
+                  </h1>
+                </div>
 
-            <p className="max-w-sm text-base leading-7 text-[#66665f] sm:text-lg sm:leading-8">
-              Explore the details. Compare your options.
-              Discover products that fit your everyday.
-            </p>
-          </div>
-        </section>
+                <p className="max-w-sm text-base leading-7 text-[#66665f] sm:text-lg sm:leading-8">
+                  Explore the details. Compare your options.
+                  Discover products that fit your everyday.
+                </p>
+              </div>
+            </section>
 
-        <section
-          id="collection"
-          aria-labelledby="collection-title"
-          className="scroll-mt-8 border-t border-black/15 py-8"
-        >
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 id="collection-title" className="text-2xl font-semibold tracking-tight">
-              The collection
-            </h2>
-            <p className="text-sm text-[#66665f]">Discover. Compare. Decide.</p>
-          </div>
-          <ProductCollection />
-        </section>
+            <section
+              id="collection"
+              aria-labelledby="collection-title"
+              className="scroll-mt-8 border-t border-black/15 py-8"
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <h2 id="collection-title" className="text-2xl font-semibold tracking-tight">
+                  The collection
+                </h2>
+                <p className="text-sm text-[#66665f]">Discover. Compare. Decide.</p>
+              </div>
+              <ProductCollection />
+            </section>
+          </>
+        )}
       </main>
     </>
   )
