@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getProductById } from '../../services/productApi'
 import { currency } from '../../utils/currency'
+import { getStockLimit } from '../../utils/cartRules'
 import { getCatalogUrl, navigateOnClick } from '../../utils/productNavigation'
 
 function BackToProducts() {
@@ -17,7 +18,7 @@ function BackToProducts() {
   )
 }
 
-export default function ProductDetails({ productId, onAddToCart }) {
+export default function ProductDetails({ productId, onAddToCart, cartReady = true, cartQuantity = 0 }) {
   const [request, setRequest] = useState({ key: null, status: 'loading', product: null })
   const [attempt, setAttempt] = useState(0)
   const numericId = Number(productId)
@@ -30,6 +31,9 @@ export default function ProductDetails({ productId, onAddToCart }) {
       ? request.status
       : 'loading'
   const product = requestMatches ? request.product : null
+  const availableStock = getStockLimit(product)
+  const atStockLimit = cartQuantity >= availableStock
+  const addDisabled = !cartReady || availableStock === 0 || atStockLimit
 
   useEffect(() => {
     if (!isValidId) return undefined
@@ -121,11 +125,19 @@ export default function ProductDetails({ productId, onAddToCart }) {
             <p className="mt-8 text-3xl font-semibold">{currency.format(product.price)}</p>
             <button
               type="button"
+              disabled={addDisabled}
+              aria-describedby="product-cart-help"
               onClick={() => onAddToCart(product)}
-              className="mt-5 rounded-full bg-[#25251f] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+              className="mt-5 rounded-full bg-[#25251f] px-6 py-3 text-sm font-medium text-white transition-colors enabled:hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
             >
-              Add to cart
+              {availableStock === 0 ? 'Out of stock' : atStockLimit ? 'Maximum in cart' : 'Add to cart'}
             </button>
+            <p id="product-cart-help" role="status" className="mt-3 text-sm text-[#66665f]">
+              {!cartReady ? 'Wait for the cart availability check, or retry it above.'
+                : availableStock === 0 ? 'This product is currently unavailable.'
+                : atStockLimit ? `All ${availableStock} available units are already in your cart.`
+                : `${availableStock} available. ${cartQuantity} in your cart.`}
+            </p>
             <dl className="mt-8 grid grid-cols-2 gap-4 border-t border-black/10 pt-6">
               <div>
                 <dt className="text-sm text-[#66665f]">Rating</dt>
@@ -133,7 +145,7 @@ export default function ProductDetails({ productId, onAddToCart }) {
               </div>
               <div>
                 <dt className="text-sm text-[#66665f]">Stock</dt>
-                <dd className="mt-1 font-medium">{product.stock} available</dd>
+                <dd className="mt-1 font-medium">{availableStock} available</dd>
               </div>
             </dl>
           </div>
