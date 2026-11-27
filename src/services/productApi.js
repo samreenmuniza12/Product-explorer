@@ -1,5 +1,15 @@
-const PRODUCTS_URL = 'https://dummyjson.com/products?limit=0&select=id,title,category,price,thumbnail'
-const PRODUCT_URL = 'https://dummyjson.com/products/'
+const API_BASE_URL = import.meta.env.DEV ? '/api/dummyjson' : 'https://dummyjson.com'
+const PRODUCTS_URL = `${API_BASE_URL}/products?limit=0&select=id,title,category,price,thumbnail`
+const PRODUCT_URL = `${API_BASE_URL}/products/`
+
+function getImageUrl(imageUrl) {
+  if (!import.meta.env.DEV || typeof imageUrl !== 'string') return imageUrl
+
+  return imageUrl.replace(
+    /^https:\/\/cdn\.dummyjson\.com(?=\/|[?#]|$)/,
+    '/dummyjson-images',
+  )
+}
 
 export async function getProducts(signal) {
   const response = await fetch(PRODUCTS_URL, { signal })
@@ -19,7 +29,7 @@ export async function getProducts(signal) {
     name: product.title,
     category: product.category,
     price: product.price,
-    image: product.thumbnail,
+    image: getImageUrl(product.thumbnail),
   }))
 }
 
@@ -46,7 +56,7 @@ export async function getProductById(id, signal) {
     category: product.category,
     description: product.description,
     price: product.price,
-    image: product.thumbnail || product.images?.[0] || '',
+    image: getImageUrl(product.thumbnail || product.images?.[0] || ''),
     rating: product.rating,
     stock: product.stock,
   }
