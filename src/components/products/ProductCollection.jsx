@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getProducts } from '../../services/productApi'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
+import { currency } from '../../utils/currency'
+import { getProductDetailsUrl, navigateOnClick } from '../../utils/productNavigation'
 
 function ProductCard({ product }) {
+  const detailsUrl = getProductDetailsUrl(product.id)
+
   return (
     <article className="h-full overflow-hidden rounded-2xl border border-black/10 bg-white">
       <div className="aspect-[4/3] bg-[#eeeee8] p-6 sm:p-8">
@@ -34,6 +32,14 @@ function ProductCard({ product }) {
           </p>
           <span className="text-xs text-[#716f68]">USD</span>
         </div>
+        <a
+          href={detailsUrl}
+          aria-label={`View details for ${product.name}`}
+          onClick={(event) => navigateOnClick(event, detailsUrl)}
+          className="mt-4 inline-flex rounded-sm text-sm font-medium text-[#6d48e5] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6d48e5]"
+        >
+          View details
+        </a>
       </div>
     </article>
   )
