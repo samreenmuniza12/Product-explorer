@@ -133,6 +133,7 @@ function App() {
             items={cartItems}
             onQuantityChange={updateCartQuantity}
             onRemove={removeFromCart}
+            onConfirmOrder={() => setCartItems([])}
           />
         ) : productId ? (
           <ProductDetails productId={productId} onAddToCart={addToCart} />
