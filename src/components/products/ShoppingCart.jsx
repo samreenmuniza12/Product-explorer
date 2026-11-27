@@ -1,7 +1,19 @@
+import { useRef, useState } from 'react'
 import { currency } from '../../utils/currency'
 import { getCatalogUrl, navigateOnClick } from '../../utils/productNavigation'
 
-export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
+export default function ShoppingCart({ items, onQuantityChange, onRemove, onConfirmOrder }) {
+  const checkoutDialog = useRef(null)
+  const [orderNumber, setOrderNumber] = useState(null)
+  const fieldClassName = 'mt-1 w-full rounded-lg border border-black/20 px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-[#6d48e5]'
+
+  function handlePlaceOrder(event) {
+    event.preventDefault()
+    const number = `PE-${crypto.randomUUID().slice(0, 13).toUpperCase()}`
+    checkoutDialog.current.close()
+    setOrderNumber(number)
+    onConfirmOrder()
+  }
   const totalUnits = items.reduce((total, item) => total + item.quantity, 0)
   const subtotal = items.reduce((total, item) => total + item.product.price * item.quantity, 0)
   const catalogUrl = getCatalogUrl()
@@ -14,9 +26,24 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
 
       {items.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-black/10 bg-white p-8 text-center sm:p-12">
-          <p role="status" className="mb-5 text-base font-medium text-[#20201e]">
-            Your cart is empty.
-          </p>
+          {orderNumber ? (
+            <>
+              <h2
+                tabIndex={-1}
+                ref={(heading) => { heading?.focus() }}
+                className="text-2xl font-semibold text-[#20201e]"
+              >
+                Order confirmed
+              </h2>
+              <p className="mt-2 mb-5 text-sm text-[#66665f]">
+                Demo order number <strong>{orderNumber}</strong>
+              </p>
+            </>
+          ) : (
+            <p role="status" className="mb-5 text-base font-medium text-[#20201e]">
+              Your cart is empty.
+            </p>
+          )}
           <a
             href={catalogUrl}
             onClick={(event) => navigateOnClick(event, catalogUrl)}
@@ -95,11 +122,11 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
           </div>
 
           <section
-            aria-labelledby="checkout-summary-title"
+            aria-labelledby="cart-summary-title"
             className="ml-auto mt-6 w-full max-w-sm rounded-2xl border border-black/10 bg-white p-6"
           >
-            <h2 id="checkout-summary-title" className="text-lg font-semibold">
-              Checkout summary
+            <h2 id="cart-summary-title" className="text-lg font-semibold">
+              Cart summary
             </h2>
             <dl className="mt-4 space-y-3">
               <div className="flex items-baseline justify-between gap-4">
@@ -113,9 +140,106 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove }) {
                 </dd>
               </div>
             </dl>
-            <p className="mt-4 text-xs leading-5 text-[#66665f]">
-              Demo summary only. No payment or order submission.
-            </p>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => checkoutDialog.current.showModal()}
+              className="mt-5 w-full rounded-full bg-[#25251f] px-5 py-3 text-sm font-semibold text-white hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+            >
+              Proceed to checkout
+            </button>
+
+            <dialog
+              ref={checkoutDialog}
+              aria-labelledby="checkout-review-title"
+              className="m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl bg-white p-6 text-[#20201e] backdrop:bg-black/50"
+            >
+              <h2 id="checkout-review-title" className="text-xl font-semibold">
+                Checkout review
+              </h2>
+              <p className="mt-2 text-sm text-[#66665f]">
+                Review your items and use sample delivery details to place a demo order.
+              </p>
+
+              <ul className="mt-4 list-none divide-y divide-black/10 p-0">
+                {items.map(({ product, quantity }) => (
+                  <li key={product.id} className="flex justify-between gap-4 py-2 text-sm">
+                    <span>{product.name} ({quantity})</span>
+                    <span className="shrink-0">{currency.format(product.price * quantity)}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-3 flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold">
+                <span>Subtotal</span>
+                <span>{currency.format(subtotal)}</span>
+              </p>
+
+              <form onSubmit={handlePlaceOrder} className="mt-5 space-y-4">
+                <fieldset className="min-w-0 space-y-3">
+                  <legend className="mb-2 font-semibold">Delivery details</legend>
+                  <label className="block text-sm font-medium">
+                    Phone number
+                    <input
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      pattern="\+?(?:[0-9][ \-]?){6,14}[0-9]"
+                      title="Enter 7 to 15 digits. Spaces and dashes are allowed."
+                      required
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block text-sm font-medium">
+                    Delivery address
+                    <input
+                      name="address"
+                      autoComplete="street-address"
+                      pattern=".*\S.*"
+                      maxLength={200}
+                      required
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block text-sm font-medium">
+                    Region / province
+                    <input
+                      name="region"
+                      autoComplete="address-level1"
+                      pattern=".*\S.*"
+                      maxLength={80}
+                      required
+                      className={fieldClassName}
+                    />
+                  </label>
+                </fieldset>
+
+                <fieldset className="space-y-2">
+                  <legend className="mb-2 font-semibold">Payment method</legend>
+                  <label className="flex items-center gap-3 rounded-lg border border-black/20 px-3 py-2 text-sm">
+                    <input type="radio" name="paymentMethod" value="cash" required />
+                    Cash on delivery
+                  </label>
+                  <label className="flex items-center gap-3 rounded-lg border border-black/20 px-3 py-2 text-sm">
+                    <input type="radio" name="paymentMethod" value="card" />
+                    Card (demo)
+                  </label>
+                </fieldset>
+
+                <div className="flex flex-wrap gap-3">
+                  <button type="submit" className="rounded-full bg-[#25251f] px-5 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4">
+                    Place demo order
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => checkoutDialog.current.close()}
+                    className="rounded-full border border-black/20 px-5 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4"
+                  >
+                    Back to cart
+                  </button>
+                </div>
+              </form>
+            </dialog>
           </section>
         </>
       )}
