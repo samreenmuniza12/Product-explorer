@@ -1,5 +1,8 @@
 # Product Explorer
 
+[Live demo](https://product-explorer-snowy.vercel.app/)
+
+
 Product Explorer is a React storefront demo built with Vite and Tailwind CSS. Browse products from the DummyJSON API, open product details, and build a cart that stays available after a page refresh.
 
 ## Try the shopping flow
@@ -32,3 +35,9 @@ Use Node.js 22.20 or newer. In Windows PowerShell, use `npm.cmd` if `npm` is blo
     npm run build
 
 The automated tests cover saved quantity restoration and recovery from invalid cart JSON.
+
+## Screenshots
+
+![Desktop product catalog](docs/screenshots/desktop.png)
+
+![Mobile checkout](docs/screenshots/mobile.png)
