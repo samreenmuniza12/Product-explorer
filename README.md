@@ -1,16 +1,34 @@
-# React + Vite
+# Product Explorer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Product Explorer is a React storefront demo built with Vite and Tailwind CSS. Browse products from the DummyJSON API, open product details, and build a cart that stays available after a page refresh.
 
-Currently, two official plugins are available:
+## Try the shopping flow
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Search the catalog by product name, filter by price, or sort by name or price.
+2. Open a product's details and add it to the cart.
+3. Change the quantity and watch the total units and subtotal update.
+4. Refresh the cart page to verify that the items and quantities are restored.
 
-## React Compiler
+Guest checkout validates sample delivery details, offers Cash on delivery and Card (demo), and shows an order number after confirmation.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## How it works
 
-## Expanding the Oxlint configuration
+- The catalog handles loading and failed requests, with a retry action.
+- React state drives cart interactions. The checkout summary calculates units and subtotal from the current cart.
+- The browser's localStorage saves product IDs, names, prices, and quantities. The storage service validates saved records and falls back to an empty cart when the data is invalid.
+- The cart supports keyboard controls and adapts to narrow screens.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Run locally
+
+Use Node.js 22.20 or newer. In Windows PowerShell, use `npm.cmd` if `npm` is blocked.
+
+    npm ci
+    npm run dev
+
+## Verify the project
+
+    npm test
+    npm run lint
+    npm run build
+
+The automated tests cover saved quantity restoration and recovery from invalid cart JSON.
