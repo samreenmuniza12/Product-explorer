@@ -1,14 +1,17 @@
 import { useRef, useState } from 'react'
 import { currency } from '../../utils/currency'
+import { getStockLimit, canCheckout } from '../../utils/cartRules'
 import { getCatalogUrl, navigateOnClick } from '../../utils/productNavigation'
 
-export default function ShoppingCart({ items, onQuantityChange, onRemove, onConfirmOrder }) {
+export default function ShoppingCart({ items, onQuantityChange, onRemove, onConfirmOrder, stockStatus = 'checking' }) {
   const checkoutDialog = useRef(null)
   const [orderNumber, setOrderNumber] = useState(null)
+  const checkoutAllowed = canCheckout(items, stockStatus)
   const fieldClassName = 'mt-1 w-full rounded-lg border border-black/20 px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-[#6d48e5]'
 
   function handlePlaceOrder(event) {
     event.preventDefault()
+    if (!checkoutAllowed) return
     const number = `PE-${crypto.randomUUID().slice(0, 13).toUpperCase()}`
     checkoutDialog.current.close()
     setOrderNumber(number)
@@ -57,7 +60,7 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove, onConf
           <div className="mt-8 overflow-hidden rounded-2xl border border-black/10 bg-white">
             <div
               aria-hidden="true"
-              className="hidden grid-cols-[minmax(0,1fr)_8rem_9rem_8rem_6rem] gap-4 border-b border-black/10 bg-[#eeeee8] px-6 py-4 text-xs font-semibold tracking-wider text-[#66665f] uppercase sm:grid"
+              className="hidden grid-cols-[minmax(0,1fr)_8rem_9rem_8rem_6rem] gap-4 border-b border-black/10 bg-[#eeeee8] px-6 py-4 text-xs font-semibold tracking-wider text-[#66665f] uppercase lg:grid"
             >
               <span>Product</span>
               <span>Unit price</span>
@@ -70,22 +73,27 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove, onConf
               {items.map(({ product, quantity }) => (
                 <li
                   key={product.id}
-                  className="grid grid-cols-2 gap-x-4 gap-y-4 p-5 sm:grid-cols-[minmax(0,1fr)_8rem_9rem_8rem_6rem] sm:items-center sm:gap-4 sm:px-6"
+                  className="grid grid-cols-2 gap-x-4 gap-y-4 p-5 lg:grid-cols-[minmax(0,1fr)_8rem_9rem_8rem_6rem] lg:items-center lg:gap-4 lg:px-6"
                 >
-                  <h2 className="col-span-2 text-base font-semibold leading-snug sm:col-span-1">
-                    {product.name}
-                  </h2>
+                  <div className="col-span-2 lg:col-span-1">
+                    <h2 className="text-base font-semibold leading-snug">{product.name}</h2>
+                    <p className={`mt-2 text-sm ${stockStatus === 'ready' && getStockLimit(product) === 0 ? 'text-red-700' : 'text-[#66665f]'}`}>
+                      {stockStatus !== 'ready' ? 'Availability not verified yet.'
+                        : getStockLimit(product) === 0 ? 'Unavailable. Remove this item to continue.'
+                        : `${getStockLimit(product)} available`}
+                    </p>
+                  </div>
                   <div>
-                    <p className="mb-1 text-xs text-[#66665f] sm:hidden">Unit price</p>
+                    <p className="mb-1 text-xs text-[#66665f] lg:hidden">Unit price</p>
                     <p>{currency.format(product.price)}</p>
                   </div>
                   <div>
-                    <p className="mb-1 text-xs text-[#66665f] sm:hidden">Quantity</p>
+                    <p className="mb-1 text-xs text-[#66665f] lg:hidden">Quantity</p>
                     <div className="inline-flex items-center rounded-lg border border-black/15">
                       <button
                         type="button"
                         aria-label={`Decrease quantity of ${product.name}`}
-                        disabled={quantity <= 1}
+                        disabled={quantity <= 1 || stockStatus !== 'ready' || getStockLimit(product) === 0}
                         onClick={() => onQuantityChange(product.id, quantity - 1)}
                         className="grid size-10 place-items-center rounded-l-lg text-lg transition-colors hover:bg-[#eeeee8] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#6d48e5]"
                       >
@@ -97,22 +105,23 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove, onConf
                       <button
                         type="button"
                         aria-label={`Increase quantity of ${product.name}`}
+                        disabled={stockStatus !== 'ready' || quantity >= getStockLimit(product)}
                         onClick={() => onQuantityChange(product.id, quantity + 1)}
-                        className="grid size-10 place-items-center rounded-r-lg text-lg transition-colors hover:bg-[#eeeee8] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#6d48e5]"
+                        className="grid size-10 place-items-center rounded-r-lg text-lg transition-colors hover:bg-[#eeeee8] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#6d48e5]"
                       >
                         <span aria-hidden="true">+</span>
                       </button>
                     </div>
                   </div>
                   <div>
-                    <p className="mb-1 text-xs text-[#66665f] sm:hidden">Line total</p>
+                    <p className="mb-1 text-xs text-[#66665f] lg:hidden">Line total</p>
                     <p className="font-semibold">{currency.format(product.price * quantity)}</p>
                   </div>
                   <button
                     type="button"
                     aria-label={`Remove ${product.name} from cart`}
                     onClick={() => onRemove(product.id)}
-                    className="justify-self-start rounded-sm text-sm font-medium text-[#6d48e5] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6d48e5] sm:justify-self-end"
+                    className="justify-self-start rounded-sm text-sm font-medium text-[#6d48e5] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6d48e5] lg:justify-self-end"
                   >
                     Remove
                   </button>
@@ -143,11 +152,19 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove, onConf
             <button
               type="button"
               aria-haspopup="dialog"
+              disabled={!checkoutAllowed}
+              aria-describedby="cart-checkout-help"
               onClick={() => checkoutDialog.current.showModal()}
-              className="mt-5 w-full rounded-full bg-[#25251f] px-5 py-3 text-sm font-semibold text-white hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
+              className="mt-5 w-full rounded-full bg-[#25251f] px-5 py-3 text-sm font-semibold text-white enabled:hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25251f]"
             >
               Proceed to checkout
             </button>
+            <p id="cart-checkout-help" className="mt-3 text-sm text-[#66665f]">
+              {stockStatus === 'checking' ? 'Checking current prices and stock...'
+                : stockStatus === 'error' ? 'Retry the availability check above to continue.'
+                : !checkoutAllowed ? 'Remove unavailable items before checkout.'
+                : 'Availability checked. This is a demo checkout; no payment is taken.'}
+            </p>
 
             <dialog
               ref={checkoutDialog}
@@ -227,7 +244,7 @@ export default function ShoppingCart({ items, onQuantityChange, onRemove, onConf
                 </fieldset>
 
                 <div className="flex flex-wrap gap-3">
-                  <button type="submit" className="rounded-full bg-[#25251f] px-5 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4">
+                  <button type="submit" disabled={!checkoutAllowed} className="disabled:cursor-not-allowed disabled:opacity-50 rounded-full bg-[#25251f] px-5 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4">
                     Place demo order
                   </button>
                   <button

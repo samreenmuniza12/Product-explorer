@@ -46,7 +46,11 @@ export async function getProductById(id, signal) {
 
   const product = await response.json()
 
-  if (!product || typeof product !== 'object' || !product.id || !product.title) {
+  if (!product || typeof product !== 'object' ||
+      !Number.isSafeInteger(product.id) || product.id <= 0 ||
+      typeof product.title !== 'string' || !product.title.trim() ||
+      !Number.isFinite(product.price) || product.price < 0 ||
+      !Number.isSafeInteger(product.stock) || product.stock < 0) {
     throw new Error('The server returned an unexpected response.')
   }
 
